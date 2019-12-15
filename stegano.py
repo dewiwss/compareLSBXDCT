@@ -1,3 +1,4 @@
+#!/usr/bin/python
 import os
 import xlwt
 import shutil
@@ -10,6 +11,103 @@ import matplotlib.pyplot as plt
 from PIL import Image
 from pathlib import Path
 from scipy import signal
+# crypto
+import codecs
+
+# crypto rc4
+MOD = 256
+
+
+def KSA(key):
+    ''' Key Scheduling Algorithm (from wikipedia):
+        for i from 0 to 255
+            S[i] := i
+        endfor
+        j := 0
+        for i from 0 to 255
+            j := (j + S[i] + key[i mod keylength]) mod 256
+            swap values of S[i] and S[j]
+        endfor
+    '''
+    key_length = len(key)
+    # create the array "S"
+    S = list(range(MOD))  # [0,1,2, ... , 255]
+    j = 0
+    for i in range(MOD):
+        j = (j + S[i] + key[i % key_length]) % MOD
+        S[i], S[j] = S[j], S[i]  # swap values
+
+    return S
+
+
+def PRGA(S):
+    ''' Psudo Random Generation Algorithm (from wikipedia):
+        i := 0
+        j := 0
+        while GeneratingOutput:
+            i := (i + 1) mod 256
+            j := (j + S[i]) mod 256
+            swap values of S[i] and S[j]
+            K := S[(S[i] + S[j]) mod 256]
+            output K
+        endwhile
+    '''
+    i = 0
+    j = 0
+    while True:
+        i = (i + 1) % MOD
+        j = (j + S[i]) % MOD
+
+        S[i], S[j] = S[j], S[i]  # swap values
+        K = S[(S[i] + S[j]) % MOD]
+        yield K
+
+
+def get_keystream(key):
+    ''' Takes the encryption key to get the keystream using PRGA
+        return object is a generator
+    '''
+    S = KSA(key)
+    return PRGA(S)
+
+
+def encrypt_logic(key, text):
+    ''' :key -> encryption key used for encrypting, as hex string
+        :text -> array of unicode values/ byte string to encrpyt/decrypt
+    '''
+    # For plaintext key, use this
+    key = [ord(c) for c in key]
+    # If key is in hex:
+    # key = codecs.decode(key, 'hex_codec')
+    # key = [c for c in key]
+    keystream = get_keystream(key)
+
+    res = []
+    for c in text:
+        val = ("%02X" % (c ^ next(keystream)))  # XOR and taking hex
+        res.append(val)
+    return ''.join(res)
+
+
+def encrypt(key, plaintext):
+    ''' :key -> encryption key used for encrypting, as hex string
+        :plaintext -> plaintext string to encrpyt
+    '''
+    plaintext = [ord(c) for c in plaintext]
+    return encrypt_logic(key, plaintext)
+
+
+def decrypt(key, ciphertext):
+    ''' :key -> encryption key used for encrypting, as hex string
+        :ciphertext -> hex encoded ciphered text using RC4
+    '''
+    ciphertext = codecs.decode(ciphertext, 'hex_codec')
+    res = encrypt_logic(key, ciphertext)
+    return codecs.decode(res, 'hex_codec').decode('utf-8')
+
+
+
+# steganography
 quant = np.array([[16,11,10,16,24,40,51,61],      # QUANTIZATION TABLE
                     [12,12,14,19,26,58,60,55],    # required for DCT
                     [14,13,16,24,40,57,69,56],
@@ -23,77 +121,6 @@ def show(im):
     plt.imshow(cv2.cvtColor(im_resized, cv2.COLOR_BGR2RGB))
     plt.show()
 
-
-# class DWT():   
-#     #encoding part : 
-#     def encode_image(self,img,secret_msg):
-#         #show(img)
-#         #get size of image in pixels
-#         row,col = img.shape[:2]
-#         #addPad
-#         if row%8 != 0 or col%8 != 0:
-#             img = cv2.resize(img,(col+(8-col%8),row+(8-row%8)))
-#         bImg,gImg,rImg = cv2.split(img)
-#         bImg = self.iwt2(bImg)
-#         #get size of paddded image in pixels
-#         height,width = bImg.shape[:2]
-#         index = 0
-#         for row in range(height):
-#             for col in range(width):
-#                 if img.mode != 'RGB':
-#                     r, g, b ,a = img.getpixel((col, row))
-#                 elif img.mode == 'RGB':
-#                     r, g, b = img.getpixel((col, row))
-#                 # first value is length of msg
-#                 if row == 0 and col == 0 and index < length:
-#                     asc = length
-#                 elif index <= length:
-#                     c = msg[index -1]
-#                     asc = ord(c)
-#                 else:
-#                     asc = r
-#                 encoded.putpixel((col, row), (asc, g , b))
-#                 index += 1
-
-
-#         return sImg
-
-#     #decoding part :
-#     def decode_image(self,img):
-#         msg = ""
-#         #get size of image in pixels
-#         row,col = img.shape[:2]
-#         bImg,gImg,rImg = cv2.split(img)
-
-#         return msg
-      
-#     """Helper function to 'stitch' new image back together"""
-#     def _iwt(self,array):
-#         output = np.zeros_like(array)
-#         nx, ny = array.shape
-#         x = nx // 2
-#         for j in xrange(ny):
-#             output[0:x,j] = (array[0::2,j] + array[1::2,j])//2
-#             output[x:nx,j] = array[0::2,j] - array[1::2,j]
-#         return output
-
-#     def _iiwt(self,array):
-#         output = np.zeros_like(array)
-#         nx, ny = array.shape
-#         x = nx // 2
-#         for j in xrange(ny):
-#             output[0::2,j] = array[0:x,j] + (array[x:nx,j] + 1)//2
-#             output[1::2,j] = output[0::2,j] - array[x:nx,j]
-#         return output
-
-#     def iwt2(self,array):
-#         return _iwt(_iwt(array.astype(int)).T).T
-
-#     def iiwt2(self,array):
-#         return _iiwt(_iiwt(array.astype(int).T).T)
-
-
-    
 
 class DCT():    
     def __init__(self): # Constructor
@@ -321,31 +348,32 @@ os.makedirs("Comparison_result/")
 original_image_file = ""    # to make the file name global variable
 lsb_encoded_image_file = ""
 dct_encoded_image_file = ""
-# dwt_encoded_image_file = ""
 
 while True:
-    m = input("To encode press '1', to decode press '2', to compare press '3', press any other button to close: ")
+    m = input("To embedd press '1', to extract press '2', to compare press '3',to decrypt message press'4', press any other button to close: ")
 
     if m == "1":
         os.chdir("Original_image/")
         original_image_file = input("Enter the name of the file with extension : ")
         lsb_img = Image.open(original_image_file)
         dct_img = cv2.imread(original_image_file, cv2.IMREAD_UNCHANGED)
-#        dwt_img = cv2.imread(original_image_file, cv2.IMREAD_UNCHANGED)
         print("Description : ",lsb_img,"\nMode : ", lsb_img.mode)
-        secret_msg = input("Enter the message you want to hide: ")
+
+        plaintext = input("Enter the message you want to hide: ")
+        # kunci enkripsi rc4
+        key = 'not-so-random-key'
+        # ciphertext yang akan diembed ke gambar stegano
+        secret_msg = encrypt(key, plaintext)
+
         print("The message length is: ",len(secret_msg))
         os.chdir("..")
         os.chdir("Encoded_image/")
         lsb_img_encoded = LSB().encode_image(lsb_img, secret_msg)
         dct_img_encoded = DCT().encode_image(dct_img, secret_msg)
-#        dwt_img_encoded = DWT().encode_image(dwt_img, secret_msg)
         lsb_encoded_image_file = "lsb_" + original_image_file
         lsb_img_encoded.save(lsb_encoded_image_file)
         dct_encoded_image_file = "dct_" + original_image_file
         cv2.imwrite(dct_encoded_image_file,dct_img_encoded)
-#        dwt_encoded_image_file = "dwt_" + original_image_file
-#        cv2.imwrite(dwt_encoded_image_file,dwt_img_encoded) # saving the image with the hidden text
         print("Encoded images were saved!")
         os.chdir("..")
 
@@ -353,21 +381,16 @@ while True:
         os.chdir("Encoded_image/")
         lsb_img = Image.open(lsb_encoded_image_file)
         dct_img = cv2.imread(dct_encoded_image_file, cv2.IMREAD_UNCHANGED)
-#        dwt_img = cv2.imread(dwt_encoded_image_file, cv2.IMREAD_UNCHANGED)
         os.chdir("..") #going back to parent directory
         os.chdir("Decoded_output/")
         lsb_hidden_text = LSB().decode_image(lsb_img)
         dct_hidden_text = DCT().decode_image(dct_img) 
-#        dwt_hidden_text = DWT().decode_image(dwt_img) 
         file = open("lsb_hidden_text.txt","w")
         file.write(lsb_hidden_text) # saving hidden text as text file
         file.close()
         file = open("dct_hidden_text.txt","w")
         file.write(dct_hidden_text) # saving hidden text as text file
         file.close()
-#        file = open("dwt_hidden_text.txt","w")
-#        file.write(dwt_hidden_text) # saving hidden text as text file
-#        file.close()
         print("Hidden texts were saved as text file!")
         os.chdir("..")
     elif m == "3":
@@ -378,11 +401,9 @@ while True:
         os.chdir("Encoded_image/")
         lsbEncoded = cv2.imread(lsb_encoded_image_file)
         dctEncoded = cv2.imread(dct_encoded_image_file)
-#        dwtEncoded = cv2.imread(dwt_encoded_image_file)
         original = cv2.cvtColor(original, cv2.COLOR_BGR2RGB)
         lsb_encoded_img = cv2.cvtColor(lsbEncoded, cv2.COLOR_BGR2RGB)
         dct_encoded_img = cv2.cvtColor(dctEncoded, cv2.COLOR_BGR2RGB)
-#        dwt_encoded_img = cv2.cvtColor(dwtEncoded, cv2.COLOR_BGR2RGB)
         os.chdir("..")
         os.chdir("Comparison_result/")
 
@@ -399,13 +420,17 @@ while True:
         sheet1.write(2, 0, "DCT")
         sheet1.write(2, 1, Compare().meanSquareError(original, dct_encoded_img))
         sheet1.write(2, 2, Compare().psnr(original, dct_encoded_img))
-        # sheet1.write(3, 0, "DWT")
-#        sheet1.write(3, 1, Compare().meanSquareError(original, dwt_encoded_img))
-#        sheet1.write(3, 2, Compare().psnr(original, dwt_encoded_img))
 
         book.save("Comparison.xls")
         print("Comparison Results were saved as xls file!")
         os.chdir("..")
+    elif m == "4":
+        # kunci enkripsi rc4
+        key = 'not-so-random-key'
+        # change ciphertext to string again
+        decrypted = decrypt(key, secret_msg)
+        print('decrypted:', decrypted)
+
     else:
         print("Closed!")
         break

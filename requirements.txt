@@ -4,6 +4,7 @@ numpy
 matplotlib
 pillow
 pathlib
+codecs
 
 
 # openCV==3.0.0
