@@ -6,7 +6,7 @@
 # Brief: https://en.wikipedia.org/wiki/RC4
 
 # Will use codecs, as 'str' object in Python 3 doesn't have any attribute 'decode'
-import codecs
+import codecs, time
 
 MOD = 256
 
@@ -104,14 +104,17 @@ def main():
     key = 'not-so-random-key'  # plaintext
     plaintext = 'Good work! Your implementation is correct'  # plaintext
     # encrypt the plaintext, using key and RC4 algorithm
+    start = time.time()
     ciphertext = encrypt(key, plaintext)
     print('plaintext:', plaintext)
+    end = time.time() - start
+    print('waktu encrypt: ',end)
     print('ciphertext:', ciphertext)
     # ..
     # Let's check the implementation
     # ..
-    ciphertext = '2D7FEE79FFCE80B7DDB7BDA5A7F878CE298615'\
-        '476F86F3B890FD4746BE2D8F741395F884B4A35CE979'
+    # ciphertext = '2D7FEE79FFCE80B7DDB7BDA5A7F878CE298615'\
+    #     '476F86F3B890FD4746BE2D8F741395F884B4A35CE979'
     # change ciphertext to string again
     decrypted = decrypt(key, ciphertext)
     print('decrypted:', decrypted)
@@ -150,5 +153,5 @@ def test():
     assert(decrypt('Secret',
                    '45A01F645FC35B383552544B9BF5')) == 'Attack at dawn'
 
-# if __name__ == '__main__':
-#     main()
+if __name__ == '__main__':
+    main()

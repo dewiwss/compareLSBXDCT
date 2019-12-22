@@ -370,7 +370,8 @@ while True:
         #waktu selesai encrypt
         finish_encrypt = time.time() - start_encrypt
 
-        print("The message length is: ",len(secret_msg))
+        print("The secret message length is (plaintext): ",len(plaintext))
+        print("The secret message length is (ciphertext): ",len(secret_msg))
         os.chdir("..")
         os.chdir("Encoded_image/")
 
