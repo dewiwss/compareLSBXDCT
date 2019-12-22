@@ -7,7 +7,7 @@ from stegano import *
 
 def meanSquareError(im1, im2):
 	error = numpy.sum((im1.astype('float') - im2.astype('float')) ** 2)
-	error /= float(im1.shape[0] * im1.shape[1]);
+	error /= float(im1.shape[0] * im1.shape[1])
 
 	return error
 

@@ -5,6 +5,7 @@ import shutil
 import cv2
 import sys
 import math
+import time
 import numpy as np
 import itertools
 import matplotlib.pyplot as plt
@@ -361,15 +362,35 @@ while True:
 
         plaintext = input("Enter the message you want to hide: ")
         # kunci enkripsi rc4
-        key = 'not-so-random-key'
-        # ciphertext yang akan diembed ke gambar stegano
+        key = input("Enter key:")
+        #waktu mulai enkripsi pesan rahasia
+        start_encrypt = time.time()
+        # proses enkripsi text
         secret_msg = encrypt(key, plaintext)
+        #waktu selesai encrypt
+        finish_encrypt = time.time() - start_encrypt
 
         print("The message length is: ",len(secret_msg))
         os.chdir("..")
         os.chdir("Encoded_image/")
+
+        #LSB
+        #waktu mulai encode / embedd LSB
+        start_embedd_LSB = time.time()
+        #proses encode / embed LSB
         lsb_img_encoded = LSB().encode_image(lsb_img, secret_msg)
+        #waktu selesai encode / embedd LSB
+        finish_embedd_LSB = time.time() - start_embedd_LSB
+        
+        #DCT
+        #waktu mulai encode / embedd DCT
+        start_embedd_DCT = time.time()
+        #proses encode / embedd DCT
         dct_img_encoded = DCT().encode_image(dct_img, secret_msg)
+        #waktu selesai encode / embedd DCT
+        finish_embedd_DCT = time.time() - start_embedd_DCT
+        
+        #save image hasil encode/embed
         lsb_encoded_image_file = "lsb_" + original_image_file
         lsb_img_encoded.save(lsb_encoded_image_file)
         dct_encoded_image_file = "dct_" + original_image_file
@@ -377,14 +398,34 @@ while True:
         print("Encoded images were saved!")
         os.chdir("..")
 
+        #perbandingan waktu proses embedding
+        print("Waktu proses enkripsi pesan : " + str(finish_encrypt))
+        print("Waktu proses embedding LSB : " + str(finish_embedd_LSB))
+        print("Waktu proses embedding DCT : " + str(finish_embedd_DCT))
+
     elif m == "2":
         os.chdir("Encoded_image/")
         lsb_img = Image.open(lsb_encoded_image_file)
         dct_img = cv2.imread(dct_encoded_image_file, cv2.IMREAD_UNCHANGED)
         os.chdir("..") #going back to parent directory
         os.chdir("Decoded_output/")
+        
+        #LSB
+        #start waktu extract LSB
+        start_extract_LSB = time.time()
+        #proses extract / decode LSB
         lsb_hidden_text = LSB().decode_image(lsb_img)
-        dct_hidden_text = DCT().decode_image(dct_img) 
+        #finish waktu extract LSB
+        finish_extract_LSB = time.time() - start_extract_LSB
+        
+        #DCT
+        #start waktu extract DCT
+        start_extract_DCT = time.time()
+        #proses extract / decode DCT
+        dct_hidden_text = DCT().decode_image(dct_img)
+        #finish waktu extract DCT
+        finish_extract_DCT = time.time() - start_extract_DCT
+
         file = open("lsb_hidden_text.txt","w")
         file.write(lsb_hidden_text) # saving hidden text as text file
         file.close()
@@ -393,6 +434,11 @@ while True:
         file.close()
         print("Hidden texts were saved as text file!")
         os.chdir("..")
+
+        #perbanding waktu proses extraksi
+        print("Waktu proses ekstraksi LSB : ", str(finish_extract_LSB))
+        print("Waktu proses ekstraksi DCT : ", str(finish_extract_DCT))
+
     elif m == "3":
         #comparison calls
         os.chdir("Original_image/")
@@ -426,10 +472,16 @@ while True:
         os.chdir("..")
     elif m == "4":
         # kunci enkripsi rc4
-        key = 'not-so-random-key'
+        key = input("Enter key:")
+        #waktu mulai dekripsi ciphertext pesan rahasia
+        start_decrypt = time.time()
         # change ciphertext to string again
         decrypted = decrypt(key, secret_msg)
+        #waktu selesai dekripsi ciphertext pesan rahasia
+        finish_decrypt = time.time() - start_decrypt
+        
         print('decrypted:', decrypted)
+        print('Waktu proses dekripsi pesan: ',finish_decrypt)
 
     else:
         print("Closed!")
