@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# author: @manojpandey
+
 
 # Python 3 implementation for RC4 algorithm
 # Brief: https://en.wikipedia.org/wiki/RC4
