@@ -5,7 +5,7 @@
 *Aplikasi pembanding algoritma LSB dan DCT dengan menerapkan enkripsi dan dekripsi RC4 menggunakan Python 3.8.0.*)    
 ## Petunjuk penggunaan:
 
-MPastikan sudah menginstall python dan pip.
+Pastikan sudah menginstall python dan pip.
 
 Buka terminal, lakukan perintah:
 ```console
